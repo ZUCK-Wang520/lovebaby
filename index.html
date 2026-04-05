@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>心意祝福 · 网页版爱心弹窗</title>
+  <style>
+    :root {
+      --rose: #ff6b9d;
+      --rose-dim: #c94b7a;
+      --cream: #fff5f8;
+      --glass: rgba(40, 12, 28, 0.78);
+      --border: rgba(255, 107, 157, 0.45);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-spring: cubic-bezier(0.34, 1.25, 0.64, 1);
+      /**
+       * 背景照片（须为你自有或已获授权）：在下方填写第二层图，例如
+       *   --page-bg-photo: url("bg.jpg");
+       * 开源发布请保持为 none，勿附带他人图片链接。
+       */
+      --page-bg-photo: none;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      background: #0a0508;
+      color: var(--cream);
+    }
+    .page-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-color: #1a1520;
+      background-image:
+        linear-gradient(165deg, rgba(255, 240, 250, 0.08) 0%, transparent 42%, rgba(40, 20, 45, 0.12) 100%),
+        var(--page-bg-photo);
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+    #miniWinLayer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .fake-win {
+      pointer-events: auto;
+      position: absolute;
+      width: 168px;
+      min-height: 102px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 0 24px rgba(255, 120, 170, 0.12);
+      animation: winPop 0.42s var(--ease-spring) both;
+      transition: box-shadow 0.28s var(--ease-out), transform 0.28s var(--ease-spring);
+    }
+    .fake-win:not(.is-spread):hover {
+      transform: translateY(-4px) scale(1.04);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.38),
+        0 0 0 1px rgba(255, 255, 255, 0.28),
+        0 0 32px rgba(255, 107, 157, 0.35);
+      z-index: 8;
+    }
+    @keyframes winPop {
+      0% {
+        opacity: 0;
+        transform: scale(0.45) translateY(12px);
+      }
+      55% {
+        opacity: 1;
+        transform: scale(1.08) translateY(-3px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .fake-win .titlebar {
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      font-size: 11px;
+      color: #2d2d2d;
+      background: linear-gradient(180deg, #f8f8f8 0%, #dadada 48%, #c4c4c4 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      cursor: default;
+      user-select: none;
+    }
+    .fake-win .titlebar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fake-win .btn-x {
+      border: none;
+      background: linear-gradient(145deg, #ef9a9a, #e57373);
+      color: #fff;
+      width: 16px;
+      height: 16px;
+      line-height: 14px;
+      font-size: 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      transition: transform 0.22s var(--ease-spring), filter 0.2s;
+    }
+    .fake-win .btn-x:hover {
+      filter: brightness(1.1);
+      transform: scale(1.12) rotate(90deg);
+    }
+    .fake-win .body {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      text-align: center;
+      color: #4a1538;
+      font-weight: 600;
+    }
+    .toolbar {
+      position: fixed;
+      left: 50%;
+      bottom: 0.85rem;
+      transform: translateX(-50%);
+      z-index: 6;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      max-width: 96vw;
+      pointer-events: none;
+    }
+    .toolbar button {
+      pointer-events: auto;
+      border: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(255, 140, 180, 0.42), rgba(60, 20, 50, 0.72));
+      color: var(--cream);
+      padding: 0.52rem 0.95rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      backdrop-filter: blur(12px) saturate(1.2);
+      font-family: inherit;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+      transition:
+        transform 0.25s var(--ease-spring),
+        box-shadow 0.25s ease,
+        border-color 0.2s ease,
+        filter 0.2s ease;
+    }
+    .toolbar button:hover {
+      border-color: #ffb3d0;
+      color: #fff;
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 10px 28px rgba(255, 107, 157, 0.35), 0 0 24px rgba(255, 150, 200, 0.2);
+    }
+    .toolbar button:active {
+      transform: translateY(-1px) scale(0.98);
+    }
+    .fake-win.is-spread {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition:
+        left 1.05s var(--ease-spring),
+        top 1.05s var(--ease-spring),
+        width 1.05s var(--ease-spring),
+        height 1.05s var(--ease-spring),
+        min-height 1.05s var(--ease-spring),
+        box-shadow 0.5s ease;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        0 0 16px rgba(255, 130, 180, 0.15);
+    }
+    .fake-win.is-spread .titlebar {
+      height: 20px;
+      font-size: 10px;
+    }
+    .fake-win.is-spread .body {
+      font-size: 10px;
+      line-height: 1.25;
+      min-height: 0;
+      flex: 1;
+      padding: 4px 5px;
+    }
+    @media (min-width: 1024px) {
+      .fake-win {
+        width: 182px;
+        min-height: 110px;
+      }
+      .fake-win .body {
+        min-height: 78px;
+        font-size: 13px;
+      }
+      .fake-win.is-spread .body {
+        font-size: 11px;
+      }
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      background: rgba(8, 2, 6, 0.55);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .overlay.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      width: min(420px, 100%);
+      max-height: min(78vh, 560px);
+      overflow: auto;
+      border-radius: 1.35rem;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+        0 28px 90px rgba(0, 0, 0, 0.45),
+        0 0 40px rgba(255, 100, 160, 0.12);
+      padding: 1.75rem 1.5rem 1.5rem;
+      transform: scale(0.88) translateY(20px);
+      transition: transform 0.45s var(--ease-spring);
+    }
+    .overlay.is-open .modal {
+      transform: scale(1) translateY(0);
+    }
+    .modal h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.35rem;
+      color: #ffb3d0;
+      text-shadow: 0 0 24px rgba(255, 150, 200, 0.45);
+    }
+    .modal .sub {
+      text-align: center;
+      font-size: 0.8rem;
+      color: rgba(255, 245, 248, 0.5);
+      margin-bottom: 1.25rem;
+    }
+    .modal .bless {
+      font-size: 0.98rem;
+      line-height: 1.85;
+      color: rgba(255, 245, 248, 0.92);
+      margin-bottom: 1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 0.75rem;
+      background: rgba(255, 107, 157, 0.08);
+      border: 1px solid rgba(255, 107, 157, 0.15);
+    }
+    .modal .bless:last-of-type { margin-bottom: 1.25rem; }
+    .actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      border-radius: 999px;
+      padding: 0.55rem 1.1rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: transform 0.22s var(--ease-spring), filter 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn:hover {
+      filter: brightness(1.08);
+      transform: scale(1.03);
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--rose), var(--rose-dim));
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--cream);
+      border-color: var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg" aria-hidden="true"></div>
+  <div id="miniWinLayer" aria-hidden="true"></div>
+
+  <div class="toolbar">
+    <button type="button" id="replayWinBtn">再来一次爱心弹窗</button>
+    <button type="button" id="clearWinBtn">清除小窗口</button>
+    <button type="button" id="openBtn">打开祝福</button>
+  </div>
+
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <h1 id="modalTitle">愿你被温柔以待</h1>
+      <p class="sub">一份小小的心意，送给此刻屏幕前的你</p>
+      <div id="blessings"></div>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" id="shuffleBtn">换一组祝福</button>
+        <button type="button" class="btn btn-primary" id="closeBtn">收下祝福</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      /** 每个爱心小窗依次出现的间隔（毫秒），数值越大越慢 */
+      var POPUP_DELAY_MS = 200;
+
+      var WIN_COLORS = [
+        "#fff59d", "#ffcc80", "#a5d6a7", "#ef9a9a", "#90caf9",
+        "#ce93d8", "#ffab91", "#e6ee9c", "#80deea", "#f48fb1",
+        "#ffecb3", "#c5e1a5",
+      ];
+
+      /** 小窗正文循环使用的祝福语（一句一窗） */
+      var WIN_BLESSINGS = [
+        "平安喜乐，万事顺遂",
+        "愿你被世界温柔以待",
+        "心中有光，眉目明朗",
+        "所求皆如愿",
+        "所行皆坦途",
+        "岁岁常欢愉",
+        "年年皆胜意",
+        "春风十里不如你",
+        "前路灿灿，步步生花",
+        "有人懂你言外之意",
+        "也有人疼你欲言又止",
+        "辛苦了，记得爱自己",
+        "烦恼散尽，欢喜常存",
+        "每一份付出都有回响",
+        "每一个梦想都慢慢靠近",
+        "今日比昨日更快乐",
+        "爱里柔软，生活坚定",
+        "从容岁月，不慌不忙",
+        "心想事成，福禄双全",
+        "愿你所遇皆良善",
+        "眼里有星辰与温柔",
+        "忙碌里也别忘了休息",
+        "愿有人与你并肩同行",
+        "把平凡日子过成诗",
+        "晚安好梦，明日可期",
+        "你值得所有美好",
+        "保持热爱，奔赴山海",
+        "愿温柔常环绕你",
+      ];
+
+      var BLESSING_SETS = [
+        [
+          "愿你所遇皆良善，所行皆坦途，心中有光，眼里有星辰。",
+          "愿平安与健康常伴左右，忙碌的日子里也别忘了好好爱自己。",
+          "愿每一份付出都有回响，每一个梦想都慢慢靠近。",
+        ],
+        [
+          "愿有人懂你的言外之意，也有人疼你的欲言又止。",
+          "愿你在爱里柔软，在生活里坚定，在岁月里从容。",
+          "愿今天的你，比昨天更快乐一点点。",
+        ],
+        [
+          "春风十里不如你，岁岁年年，愿你被世界温柔拥抱。",
+          "愿烦恼像烟花散尽，只留下心底安静的欢喜。",
+          "前路漫漫亦灿灿，愿你步步生花，心想事成。",
+        ],
+      ];
+
+      var overlay = document.getElementById("overlay");
+      var blessingsEl = document.getElementById("blessings");
+      var miniLayer = document.getElementById("miniWinLayer");
+
+      function renderBlessings(index) {
+        var set = BLESSING_SETS[index % BLESSING_SETS.length];
+        blessingsEl.innerHTML = set
+          .map(function (line) {
+            return '<p class="bless">' + line + "</p>";
+          })
+          .join("");
+      }
+
+      var setIndex = Math.floor(Date.now() / 1000) % BLESSING_SETS.length;
+      renderBlessings(setIndex);
+
+      function openModal() {
+        overlay.classList.add("is-open");
+      }
+      function closeModal() {
+        overlay.classList.remove("is-open");
+      }
+
+      function heartMath(t) {
+        var x = 16 * Math.pow(Math.sin(t), 3);
+        var y =
+          13 * Math.cos(t) -
+          5 * Math.cos(2 * t) -
+          2 * Math.cos(3 * t) -
+          Math.cos(4 * t);
+        return { x: x, y: y };
+      }
+
+      /**
+       * 按曲线包围盒等比缩放并居中，整块心形（含底部尖角）落在安全区内。
+       * 避免对 y 做「贴底钳制」导致底部很多点同一高度、变成一条平边。
+       */
+      function buildHeartCenters(sw, sh, ww, wh, n, pad, bottomReserve) {
+        var xmin = Infinity;
+        var xmax = -Infinity;
+        var ymin = Infinity;
+        var ymax = -Infinity;
+        var k;
+        var b;
+        for (k = 0; k < 720; k++) {
+          b = heartMath((2 * Math.PI * k) / 720);
+          if (b.x < xmin) xmin = b.x;
+          if (b.x > xmax) xmax = b.x;
+          if (b.y < ymin) ymin = b.y;
+          if (b.y > ymax) ymax = b.y;
+        }
+        var availW = sw - 2 * pad - ww;
+        var availH = sh - pad - bottomReserve - wh;
+        var rw = xmax - xmin;
+        var rh = ymax - ymin;
+        var s = Math.min(availW / rw, availH / rh);
+        var mx = (xmin + xmax) / 2;
+        var my = (ymin + ymax) / 2;
+        var yTop = pad + wh / 2;
+        var yBot = sh - bottomReserve - wh / 2;
+        var cty = (yTop + yBot) / 2;
+        var pts = [];
+        for (k = 0; k < n; k++) {
+          b = heartMath((2 * Math.PI * k) / n);
+          pts.push({
+            cx: sw / 2 + s * (b.x - mx),
+            cy: cty - s * (b.y - my),
+          });
+        }
+        return pts;
+      }
+
+      var spawnTimer = null;
+
+      /** 爱心结束后：把所有小弹窗动画移动到铺满可视区域的网格 */
+      function spreadWinsToFullScreen() {
+        var sw = window.innerWidth;
+        var sh = window.innerHeight;
+        var desk = sw >= 1024;
+        var pad = desk ? 4 : 6;
+        var bottomReserve = desk ? 30 : 54;
+        var wins = miniLayer.querySelectorAll(".fake-win");
+        var m = wins.length;
+        if (m === 0) return;
+
+        var usableW = sw - 2 * pad;
+        var usableH = sh - pad - bottomReserve;
+        var cols = Math.round(Math.sqrt(m * (usableW / usableH)));
+        cols = Math.max(4, Math.min(m, cols));
+        var rows = Math.ceil(m / cols);
+        var gap = 2;
+        var cellW = usableW / cols;
+        var cellH = usableH / rows;
+        var tw = Math.max(64, Math.floor(cellW - gap));
+        var th = Math.max(50, Math.floor(cellH - gap));
+
+        var idx;
+        for (idx = 0; idx < m; idx++) {
+          wins[idx].classList.add("is-spread");
+        }
+        void miniLayer.offsetWidth;
+        for (idx = 0; idx < m; idx++) {
+          var el = wins[idx];
+          var r = Math.floor(idx / cols);
+          var c = idx % cols;
+          var left = Math.round(pad + c * cellW + (cellW - tw) / 2);
+          var top = Math.round(pad + r * cellH + (cellH - th) / 2);
+          el.style.transitionDelay = idx * 10 + "ms";
+          el.style.width = tw + "px";
+          el.style.height = th + "px";
+          el.style.minHeight = th + "px";
+          el.style.left = left + "px";
+          el.style.top = top + "px";
+        }
+      }
+
+      function clearMiniWins() {
+        if (spawnTimer !== null) {
+          clearTimeout(spawnTimer);
+          spawnTimer = null;
+        }
+        miniLayer.innerHTML = "";
+      }
+
+      function spawnMiniHeart() {
+        clearMiniWins();
+
+        var sw = window.innerWidth;
+        var sh = window.innerHeight;
+        var desk = sw >= 1024;
+        var n = 140;
+        var ww = desk ? 182 : 168;
+        var wh = desk ? 110 : 102;
+        var pad = desk ? 4 : 6;
+        var bottomReserve = desk ? 30 : 54;
+        var pts = buildHeartCenters(sw, sh, ww, wh, n, pad, bottomReserve);
+        var colors = WIN_COLORS.slice().sort(function () {
+          return Math.random() - 0.5;
+        });
+
+        var i = 0;
+        function placeOne() {
+          if (i >= n) {
+            spawnTimer = null;
+            requestAnimationFrame(function () {
+              requestAnimationFrame(spreadWinsToFullScreen);
+            });
+            return;
+          }
+          var p = pts[i];
+          var gx = Math.round(p.cx - ww / 2);
+          var gy = Math.round(p.cy - wh / 2);
+          gx = Math.max(pad, Math.min(sw - ww - pad, gx));
+          gy = Math.max(pad, Math.min(sh - wh - bottomReserve, gy));
+
+          var box = document.createElement("div");
+          box.className = "fake-win";
+          box.style.left = gx + "px";
+          box.style.top = gy + "px";
+
+          var bar = document.createElement("div");
+          bar.className = "titlebar";
+          var tit = document.createElement("span");
+          tit.textContent = "💕 祝福";
+          var xb = document.createElement("button");
+          xb.type = "button";
+          xb.className = "btn-x";
+          xb.setAttribute("aria-label", "关闭");
+          xb.textContent = "×";
+          xb.addEventListener("click", function (e) {
+            e.stopPropagation();
+            box.remove();
+          });
+          bar.appendChild(tit);
+          bar.appendChild(xb);
+
+          var body = document.createElement("div");
+          body.className = "body";
+          body.style.background = colors[i % colors.length];
+          body.textContent = WIN_BLESSINGS[i % WIN_BLESSINGS.length];
+
+          box.appendChild(bar);
+          box.appendChild(body);
+          miniLayer.appendChild(box);
+
+          i += 1;
+          spawnTimer = window.setTimeout(placeOne, POPUP_DELAY_MS);
+        }
+
+        spawnTimer = window.setTimeout(placeOne, 600);
+      }
+
+      document.getElementById("closeBtn").addEventListener("click", closeModal);
+      document.getElementById("openBtn").addEventListener("click", openModal);
+      document.getElementById("shuffleBtn").addEventListener("click", function () {
+        setIndex++;
+        renderBlessings(setIndex);
+      });
+      document.getElementById("replayWinBtn").addEventListener("click", spawnMiniHeart);
+      document.getElementById("clearWinBtn").addEventListener("click", clearMiniWins);
+
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) closeModal();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeModal();
+      });
+
+      window.setTimeout(spawnMiniHeart, 900);
+    })();
+  </script>
+</body>
+</html>
